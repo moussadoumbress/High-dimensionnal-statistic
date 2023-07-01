@@ -1,0 +1,96 @@
+---
+title: "exam1_SED"
+output: html_document
+date: "2023-02-21"
+---
+
+```{r setup, include=FALSE}
+library(faraway)
+library(caTools)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## 1 et 2
+```{r cars}
+data('prostate',package = 'faraway')
+prostate=prostate[,-c(5,7)]
+prostate
+```
+
+## 3)
+a)
+t_value(10.55) correspond à la valeur observée de la statistique du test de nullité du coeff $\beta_i$: $\bêta_i/ŝigma_i$ qui suit sous $H_0: bêta_i=0$ une loi de student à 95 degrès de liberté(n-2=97-2=95)
+
+la p_valeur est égale $proba(\abs(student)>t_value)$
+Elle est très significative (très petite), on rejette donc l'hypothèse nulle 
+(la nullité du coeffiscient de lcavol)
+```{r,eval=FALSE}
+2*(1-pt(10.55,95))
+```
+
+b)
+Le residual standard error (0.7875) est l'estimation de la variance(sigma²) des erreurs.
+c)
+Le F-statistic correspond à la statistique du test de Fisher (nullité des coeffiscients)
+d)
+
+## 4)
+```{r pressure, echo=FALSE}
+reg=lm(lpsa~.,data=prostate)
+
+library(MASS)
+#both
+#step(lm(lpsa~1,data=prostate),lpsa~.,data=prostate,direction = 'both')
+#forward
+step(lm(lpsa~1,data=prostate),lpsa~.,data=prostate,direction = 'forward')
+#backward
+#step(lm(lpsa~.,data=prostate),direction = 'backward')
+```
+## Pour la séléction Stepwise par AIC)
+le modèle séléctionné est le modèle nul (pour le both et le forward)
+le modèle constitué des variables lcavol + lweight + pgg45 est séléctionné (pour backward)
+```{r,eval=FALSE}
+library(glmnet)
+prosX=model.matrix(lpsa~.,data=prostate)[,-1]
+prosY=prostate$lpsa
+#ridge
+ridge=glmnet(prosX,prosY,alpha = 0)
+#lasso
+lasso=glmnet(prosX,prosY,alpha = 0)
+#elastic
+elastic=glmnet(prosX,prosY,alpha = 0.5)
+
+```
+
+```{r,eval=FALSE}
+set.seed(123)
+cv_ridge=cv.glmnet(prosX,prosY,alpha=0)
+cv_lasso=cv.glmnet(prosX,prosY,alpha=1)
+cv_lasso$lambda.min
+coef(cv_lasso,s='lambda.min')
+
+```
+##
+La regression par lasso séléctionne toutes les variables pour modèle
+
+## 5)
+```{r,eval=FALSE}
+set.seed(123456)
+y=sample.split(prosY,SplitRatio = 0.8)
+train=subset(prostate,y,drop=FALSE)
+test=subset(prostate,!y,drop=FALSE)
+test
+```
+## b)
+```{r,eval=False}
+#stepAIC backward
+reg1=lm(lpsa ~ lcavol + lweight + pgg45,data=train)
+reg2=lm(lpsa ~ .,data=train)
+pred1=predict(reg1)
+pred2=predict(reg2)
+```
+

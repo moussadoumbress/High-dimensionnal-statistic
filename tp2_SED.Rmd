@@ -1,0 +1,131 @@
+---
+title: "tp2_SED"
+output: html_document
+date: "2023-02-01"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+ozone_simple=read.table("ozone_simple.txt",header = TRUE,sep=";")
+summary(ozone_simple)
+
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+plot(ozone_simple$T12,ozone_simple$O3,col='blue')
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+reg=lm(ozone_simple$O3 ~ ozone_simple$T12)
+summary(reg)
+```
+## t_value correspond à la valeur observée de la statistique du test de nullité du coeff $\beta_i$: $^beta_i/ŝigma_i$ qui suit sous $H_0: ^beta_i=0$ une loi de student à 48 degrès de liberté(n-2=50-2=48)
+
+Le residual standard error (20.5) est l'estimation de la variance(sigma²) des erreurs.
+
+
+```{r,eval=FALSE}
+# la p_value
+2*(1-pt(4.311,48))
+
+```
+
+```{r,eval=FALSE}
+plot(O3~T12,data=ozone_simple)
+abline(lm(O3~T12,data=ozone_simple))
+T12=seq(min(ozone_simple$T12),max(ozone_simple$T12),length=100)
+grille=data.frame(T12)
+ICdroite=predict(reg,newdata = grille,interval='conf',level=0.95)
+matlines(grille$T12,cbind(ICdroite),lty = c(1,2,2))
+
+```
+L'IC est assez éloigné de la droite. Donc la qualité de l'estimation n'est pas bonne.
+Cet IC peut être 'le modèle peut être n'importe quelle droite dans la bande'
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r,eval=FALSE}
+ICpred=predict(reg,newdata = grille,interval='conf',level=0.95)
+matlines(grille$T12,cbind(ICdroite,ICpred[,-1]),lty=c(1,2,2,3,3),col=1)
+legend('topleft',lty=2:3,c('Y','FY'))
+IC=confint(reg,level = 0.95)
+```
+```{r,eval=FALSE}
+library(ellipse)
+plot(ellipse(reg,level=0.95),type='l',xlab="",ylab="")
+points(coef(reg)[1],coef(reg)[2],pch=3)
+lines(IC[1,c(1,1,2,2,1)],IC[2,c(1,2,2,1,1)],lty=2)
+```
+```{r,eval=FALSE}
+ozone=read.table("ozone.txt",header = TRUE,sep=";",row.names = 1)
+scatterplot3d::scatterplot3d(ozone[,'T12'],ozone[,'Vx'],ozone[,'O3'],type='h',pch=16,xlab='T12',ylab='Vx',zlab='O3')
+```
+
+```{r,eval=FALSE}
+summary(ozone)
+reg_m=lm(O3~.,data=ozone)
+```
+```{r,eval=FALSE}
+reg1=lm(O3~T12,data=ozone)
+reg2=lm(O3~T12+Vx,data=ozone)
+reg3=lm(O3~T12+Vx+Ne12,data=ozone)
+anova(reg1,reg2)
+```
+
+On rejette M1: la p_value est assez significative (test de nullité de Vx)
+```{r,eval=FALSE}
+anova(reg2,reg3)
+```
+
+On rejette M2(H0) à 5%:p=1.927e-5
+Conclusion: on garde M3
+```{r,eval=FALSE}
+library(leaps)
+regsubsets(O3~T12+T15+Ne12+N12+S12+E12+W12+Vx+O3v,data=ozone)
+```
+```{r,eval=FALSE}
+library(MASS)
+#both
+step(lm(O3~1,data=ozone),O3~T12+T15+Ne12+N12+S12+E12+W12+Vx+O3v,data=ozone,direction = 'both')
+step(lm(O3~1,data=ozone),O3~T12+T15+Ne12+N12+S12+E12+W12+Vx+O3v,data=ozone,direction = 'forward')
+step(lm(O3~T12+T15+Ne12+N12+S12+E12+W12+Vx+O3v,data=ozone),direction = 'backward')
+```
+
+```{r,eval=FALSE}
+library(glmnet)
+```
+```{r,eval=false}
+ozone=ozone[,-c(11,12)]
+summary(ozone)
+ozoneX=model.matrix(O3~.,data=ozone)[,-1]
+ozoneX
+ozoneY=ozone$O3
+```
+```{r,eval=FALSE}
+ridge=glmnet(ozoneX,ozoneY,alpha = 0)
+lasso=glmnet(ozoneX,ozoneY,alpha = 0)
+elastic=glmnet(ozoneX,ozoneY,alpha = 0.5)
+# chemins de régularisation
+plot(ridge)
+plot(ridge,xvar='lambda')
+plot(lasso)
+plot(lasso,xvar='lambda')
+```
+```{r,eval=FALSE}
+set.seed(123)
+cv_ridge=cv.glmnet(ozoneX,ozoneY,alpha=0)
+cv_lasso=cv.glmnet(ozoneX,ozoneY,alpha=1)
+cv_lasso$lambda.min
+coef(cv_lasso,s='lambda.min')
+```
+```
+

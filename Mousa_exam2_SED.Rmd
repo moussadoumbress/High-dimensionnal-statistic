@@ -1,0 +1,83 @@
+---
+title: "exam2_SED"
+output: html_document
+date: "2023-02-22"
+---
+## Simulations
+1),2),et 3)
+```{r, eval=FALSE}
+n=200
+x=runif(n,-2*pi,2*pi)
+epsilon=rnorm(n,0,0.3)
+y=rep(0,n)
+for (i in 1:n){
+  y[i]=sin(x[i])+epsilon[i]
+}
+plot(x,y)
+abline(lm(y~x))
+```
+
+La droite de la regression linéaire simple n'entre pas dans le nuage de point: le modèle n'est pas adapté.
+
+## Estimateur à noyaux
+1)
+```{r,eval=FALSE}
+rec=rep(0,n)
+gaussian=rep(0,n)
+for (i in 1:n){
+  if (abs(x[i])<=1){rec[i]=1}
+  gaussian[i]=exp(-x[i]*x[i])
+}
+
+
+matplot(x,rec,type='h')
+matplot(x,gaussian,type='h')
+
+```
+
+## 2)
+
+
+
+```{r pressure, echo=FALSE}
+NWatson=function(x,X,h){
+  n=length(X)
+  d=rep(0,n)
+  for (i in 1:n){
+    d[i]=exp(-(x-X[i])*(x-X[i])/h*h)
+  }
+  d=sum(d)
+  s=0
+  for (i in 1:n){
+    yi=exp(-(x-X[i])*(x-X[i])/h*h)/d
+    s=s+yi*exp(-(x-X[i])*(x-X[i])/h*h)
+  }
+  s=s/d
+  return(s)
+}
+```
+3)
+```{r,eval=FALSE}
+xx=runif(n,-10,10)
+s1=rep(0,n)
+s2=s1
+s3=s1
+for (i in 1:n){
+  s1[i]=NWatson(xx[i],x,0.01)
+  s2[i]=NWatson(xx[i],x,0.5)
+  s3[i]=NWatson(xx[i],x,3)
+}
+
+plot(x,y)
+  lines(xx,s1,col=1)
+  lines(xx,s2)
+plot(xx,s3)
+
+```
+
+```{r}
+plot(x, y)
+    lines(ksmooth(x, y, "normal", bandwidth = 2), col = 2)
+    lines(ksmooth(x, y, "normal", bandwidth = 5), col = 3)
+```
+
